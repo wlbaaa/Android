@@ -1,0 +1,154 @@
+#!/bin/bash
+# Android 12 Web Emulator - Start Script
+# Starts Redroid container + VNC + websockify + API server
+set -e
+
+echo "========================================"
+echo "  Android 12 Web Emulator - Starting"
+echo "========================================"
+
+# Configuration
+VNC_PORT=${VNC_PORT:-5900}
+WEBSOCKIFY_PORT=${WEBSOCKIFY_PORT:-6080}
+API_PORT=${API_PORT:-8080}
+WEB_PORT=${WEB_PORT:-3000}
+ANDROID_VERSION=${ANDROID_VERSION:-12.0.0-latest}
+
+# Detect Codespace URL
+if [ -n "$CODESPACE_NAME" ]; then
+    BASE_URL="https://${CODESPACE_NAME}-${WEBSOCKIFY_PORT}.app.github.dev"
+    API_URL="https://${CODESPACE_NAME}-${API_PORT}.app.github.dev"
+    WEB_URL="https://${CODESPACE_NAME}-${WEB_PORT}.app.github.dev"
+else
+    BASE_URL="http://localhost:${WEBSOCKIFY_PORT}"
+    API_URL="http://localhost:${API_PORT}"
+    WEB_URL="http://localhost:${WEB_PORT}"
+fi
+
+# Stop any existing containers
+echo "[INFO] Cleaning up old containers..."
+docker stop android12 2>/dev/null || true
+docker rm android12 2>/dev/null || true
+pkill -f websockify 2>/dev/null || true
+pkill -f "python.*server.py" 2>/dev/null || true
+
+# Start Redroid (Android 12 in Docker)
+echo "[INFO] Starting Redroid Android ${ANDROID_VERSION}..."
+docker run -d \
+    --name android12 \
+    --privileged \
+    -p 5555:5555 \
+    -v ~/redroid-data:/data \
+    redroid/redroid:${ANDROID_VERSION} \
+    androidboot.redroid_gpu_mode=guest \
+    androidboot.redroid_width=720 \
+    androidboot.redroid_height=1280 \
+    androidboot.redroid_dpi=320 \
+    androidboot.redroid_fps=30 \
+    2>/dev/null || {
+    echo "[ERROR] Failed to start Redroid container."
+    echo "[INFO] Try pulling the image first: docker pull redroid/redroid:${ANDROID_VERSION}"
+    exit 1
+}
+
+echo "[INFO] Waiting for Android to boot..."
+sleep 10
+
+# Connect adb
+echo "[INFO] Connecting adb..."
+adb connect localhost:5555 2>/dev/null || {
+    echo "[INFO] Waiting more for adb..."
+    sleep 10
+    adb connect localhost:5555
+}
+
+# Wait for Android boot to complete
+echo "[INFO] Waiting for Android boot to complete..."
+BOOT_COMPLETE=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
+RETRY=0
+while [ "$BOOT_COMPLETE" != "1" ] && [ $RETRY -lt 30 ]; do
+    sleep 5
+    BOOT_COMPLETE=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
+    RETRY=$((RETRY+1))
+    echo "  Waiting... ($RETRY/30)"
+done
+
+if [ "$BOOT_COMPLETE" = "1" ]; then
+    echo "[OK] Android booted successfully!"
+else
+    echo "[WARN] Boot not complete yet, continuing anyway..."
+fi
+
+# Start VNC server using scrcpy or androidvncserver
+# Redroid has built-in VNC on port 5900 via scrcpy --vnc
+echo "[INFO] Starting VNC server via scrcpy..."
+
+# Method 1: Use scrcpy with VNC mode (if available)
+if command -v scrcpy &>/dev/null; then
+    scrcpy --vnc --port $VNC_PORT --no-audio &
+# Method 2: Use adb exec-out with screenrecord
+else
+    # Install scrcpy
+    echo "[INFO] Installing scrcpy..."
+    apt-get update -qq && apt-get install -y -qq scrcpy 2>/dev/null || {
+        pip3 install scrcpy 2>/dev/null
+    }
+    if command -v scrcpy &>/dev/null; then
+        scrcpy --vnc --port $VNC_PORT --no-audio &
+    else
+        echo "[WARN] scrcpy not available, using fallback VNC method"
+        # Fallback: use Android's built-in screen capture
+        # Start a simple VNC server using x11vnc + virtual display
+        apt-get install -y -qq x11vnc xvfb 2>/dev/null
+        Xvfb :99 -screen 0 720x1280x24 &
+        export DISPLAY=:99
+        # Use adb screen mirror to Xvfb
+        while true; do
+            adb exec-out screenrecord --output-format=h264 - | ffmpeg -y -i - -f image2pipe -vcodec rawvideo -pix_fmt rgb565 - | \
+            DISPLAY=:99 x11vnc -display :99 -rfbport $VNC_PORT -nopw -forever -shared 2>/dev/null
+            sleep 2
+        done &
+    fi
+fi
+
+sleep 3
+echo "[OK] VNC server started on port $VNC_PORT"
+
+# Start websockify (VNC -> WebSocket bridge for noVNC)
+echo "[INFO] Starting websockify on port $WEBSOCKIFY_PORT..."
+websockify --web /opt/novnc $WEBSOCKIFY_PORT localhost:$VNC_PORT &
+sleep 2
+echo "[OK] websockify started - noVNC available at $BASE_URL/vnc.html"
+
+# Start the API server
+echo "[INFO] Starting API server on port $API_PORT..."
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+python3 "$SCRIPT_DIR/server.py" --port $API_PORT &
+sleep 2
+echo "[OK] API server started at $API_URL"
+
+# Start the web frontend server
+echo "[INFO] Starting web frontend on port $WEB_PORT..."
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$ROOT_DIR"
+python3 -m http.server $WEB_PORT &
+sleep 2
+echo "[OK] Web frontend started at $WEB_URL"
+
+echo ""
+echo "========================================"
+echo "  All Services Started!"
+echo "========================================"
+echo ""
+echo "  Web UI:        $WEB_URL"
+echo "  noVNC Client:  $BASE_URL/vnc.html"
+echo "  API Server:    $API_URL"
+echo "  ADB Device:    localhost:5555"
+echo ""
+echo "  To install APK: curl -X POST $API_URL/install -F 'apk=@your_app.apk'"
+echo ""
+echo "  Press Ctrl+C to stop all services"
+echo ""
+
+# Keep alive
+wait
