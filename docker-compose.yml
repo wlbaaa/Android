@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+  redroid:
+    image: redroid/redroid:12.0.0-latest
+    privileged: true
+    container_name: android12
+    ports:
+      - "5555:5555"
+    volumes:
+      - redroid-data:/data
+    command: >
+      androidboot.redroid_gpu_mode=guest
+      androidboot.redroid_width=720
+      androidboot.redroid_height=1280
+      androidboot.redroid_dpi=320
+      androidboot.redroid_fps=30
+    restart: unless-stopped
+
+  websockify:
+    image: novnc/websockify:latest
+    container_name: websockify
+    ports:
+      - "6080:6080"
+    command: --web /usr/share/novnc/ 6080 localhost:5900
+    depends_on:
+      - vnc-server
+    restart: unless-stopped
+
+  vnc-server:
+    image: domistyle/scrcpy:latest
+    container_name: vnc-server
+    privileged: true
+    ports:
+      - "5900:5900"
+    environment:
+      - ANDROID_DEVICE=localhost:5555
+    depends_on:
+      - redroid
+    restart: unless-stopped
+
+  api-server:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: api-server
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redroid
+    volumes:
+      - apk-uploads:/tmp/apk_uploads
+    restart: unless-stopped
+
+volumes:
+  redroid-data:
+  apk-uploads:
