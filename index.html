@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Android 12 Web Emulator</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%23007aff'/></svg>">
+    <style>
+        /* ===== Material You Design System ===== */
+        :root {
+            /* Android 12 Material You Color Palette */
+            --md-primary: #6750A4;
+            --md-on-primary: #FFFFFF;
+            --md-primary-container: #EADDFF;
+            --md-on-primary-container: #21005D;
+            --md-secondary: #625B71;
+            --md-on-secondary: #FFFFFF;
+            --md-secondary-container: #E8DEF8;
+            --md-on-secondary-container: #1D192B;
+            --md-tertiary: #7D5260;
+            --md-on-tertiary: #FFFFFF;
+            --md-tertiary-container: #FFD8E4;
+            --md-on-tertiary-container: #31111D;
+            --md-error: #B3261E;
+            --md-on-error: #FFFFFF;
+            --md-error-container: #F9DEDC;
+            --md-on-error-container: #410E0B;
+            --md-background: #FEF7FF;
+            --md-on-background: #1D1B20;
+            --md-surface: #FEF7FF;
+            --md-on-surface: #1D1B20;
+            --md-surface-variant: #E7E0EC;
+            --md-on-surface-variant: #49454F;
+            --md-outline: #79747E;
+            --md-outline-variant: #CAC4D0;
+            --md-shadow: #000000;
+            --md-scrim: #000000;
+            --md-inverse-surface: #322F35;
+            --md-inverse-on-surface: #F5EFF7;
+            --md-inverse-primary: #D0BCFF;
+            --md-surface-dim: #DED8E1;
+            --md-surface-bright: #FEF7FF;
+            --md-surface-container-lowest: #FFFFFF;
+            --md-surface-container-low: #F7F2FA;
+            --md-surface-container: #F3EDF7;
+            --md-surface-container-high: #ECE6F0;
+            --md-surface-container-highest: #E6E0E9;
+
+            /* Shape System */
+            --md-shape-xs: 4px;
+            --md-shape-sm: 8px;
+            --md-shape-md: 12px;
+            --md-shape-lg: 16px;
+            --md-shape-xl: 28px;
+            --md-shape-full: 9999px;
+
+            /* Motion */
+            --md-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+            --md-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+            --md-motion-duration-short: 200ms;
+            --md-motion-duration-medium: 350ms;
+            --md-motion-duration-long: 500ms;
+        }
+
+        /* Dark theme */
+        [data-theme="dark"] {
+            --md-primary: #D0BCFF;
+            --md-on-primary: #381E72;
+            --md-primary-container: #4F378B;
+            --md-on-primary-container: #EADDFF;
+            --md-secondary: #CCC2DC;
+            --md-on-secondary: #332D41;
+            --md-secondary-container: #4A4458;
+            --md-on-secondary-container: #E8DEF8;
+            --md-tertiary: #EFB8C8;
+            --md-on-tertiary: #492532;
+            --md-tertiary-container: #633B48;
+            --md-on-tertiary-container: #FFD8E4;
+            --md-error: #F2B8B5;
+            --md-on-error: #601410;
+            --md-error-container: #8C1D18;
+            --md-on-error-container: #F9DEDC;
+            --md-background: #141218;
+            --md-on-background: #E6E0E9;
+            --md-surface: #141218;
+            --md-on-surface: #E6E0E9;
+            --md-surface-variant: #49454F;
+            --md-on-surface-variant: #CAC4D0;
+            --md-outline: #938F99;
+            --md-outline-variant: #49454F;
+            --md-inverse-surface: #E6E0E9;
+            --md-inverse-on-surface: #322F35;
+            --md-inverse-primary: #6750A4;
+            --md-surface-dim: #141218;
+            --md-surface-bright: #3B383E;
+            --md-surface-container-lowest: #0F0D13;
+            --md-surface-container-low: #1D1B20;
+            --md-surface-container: #211F26;
+            --md-surface-container-high: #2B2930;
+            --md-surface-container-highest: #36343B;
+        }
+
+        /* ===== Reset & Base ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Google Sans', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--md-surface-dim);
+            color: var(--md-on-surface);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            transition: background var(--md-motion-duration-medium) var(--md-motion-easing-standard);
+        }
+
+        /* ===== Top App Bar ===== */
+        .top-app-bar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 64px;
+            background: var(--md-surface);
+            color: var(--md-on-surface);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            z-index: 100;
+            box-shadow: 0 1px 0 var(--md-outline-variant);
+        }
+
+        .top-app-bar .title {
+            font-size: 22px;
+            font-weight: 400;
+            flex: 1;
+            padding-left: 16px;
+        }
+
+        .icon-button {
+            width: 48px; height: 48px;
+            border: none; border-radius: var(--md-shape-full);
+            background: transparent;
+            color: var(--md-on-surface);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: background var(--md-motion-duration-short) var(--md-motion-easing-standard);
+        }
+        .icon-button:hover { background: var(--md-surface-container-high); }
+        .icon-button:active { background: var(--md-surface-container-highest); }
+
+        .icon-button svg { width: 24px; height: 24px; fill: currentColor; }
+
+        /* ===== Phone Frame ===== */
+        .phone-wrapper {
+            margin-top: 80px;
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .phone-frame {
+            position: relative;
+            width: 390px;
+            height: 844px;
+            background: #1a1a1a;
+            border-radius: 55px;
+            padding: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 0 2px #333;
+        }
+
+        .phone-screen {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: var(--md-background);
+            border-radius: 44px;
+            overflow: hidden;
+            transition: background var(--md-motion-duration-medium) var(--md-motion-easing-standard);
+        }
+
+        /* Punch hole camera */
+        .punch-hole {
+            position: absolute;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 12px; height: 12px;
+            background: #000;
+            border-radius: 50%;
+            z-index: 50;
+        }
+
+        /* ===== Status Bar ===== */
+        .status-bar {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 28px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--md-on-surface);
+            z-index: 40;
+            pointer-events: none;
+        }
+
+        .status-bar-right { display: flex; align-items: center; gap: 6px; }
+        .status-bar-right svg { width: 16px; height: 16px; fill: currentColor; }
+
+        /* ===== Navigation Bar (Gesture pill) ===== */
+        .nav-bar {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 40;
+            pointer-events: auto;
+        }
+
+        .gesture-pill {
+            width: 134px;
+            height: 5px;
+            background: var(--md-on-surface);
+            border-radius: var(--md-shape-full);
+            opacity: 0.4;
+            cursor: pointer;
+            transition: opacity var(--md-motion-duration-short) var(--md-motion-easing-standard);
+        }
+        .gesture-pill:hover { opacity: 0.7; }
+        .gesture-pill:active { opacity: 0.9; }
+
+        /* ===== Screens ===== */
+        .screen {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            padding-top: 44px;
+            padding-bottom: 34px;
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.95);
+            transition: all var(--md-motion-duration-medium) var(--md-motion-easing-emphasized);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .screen.active {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1);
+        }
+
+        .screen::-webkit-scrollbar { display: none; }
+        .screen { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* ===== Home Screen ===== */
+        #screen-home {
+            display: flex;
+            flex-direction: column;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+
+        .home-clock-widget {
+            margin-top: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .clock-display {
+            flex: 1;
+        }
+        .clock-time {
+            font-size: 64px;
+            font-weight: 200;
+            line-height: 1;
+            color: var(--md-on-surface);
+            letter-spacing: -2px;
+        }
+        .clock-date {
+            font-size: 15px;
+            color: var(--md-on-surface-variant);
+            margin-top: 4px;
+        }
+
+        .weather-widget {
+            background: var(--md-surface-container);
+            border-radius: var(--md-shape-xl);
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 80px;
+        }
+        .weather-icon { font-size: 28px; }
+        .weather-temp { font-size: 18px; font-weight: 500; color: var(--md-on-surface); }
+
+        /* Google search bar */
+        .search-bar-widget {
+            margin-top: 20px;
+            height: 56px;
+            background: var(--md-surface-container-high);
+            border-radius: var(--md-shape-full);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 12px;
+            cursor: pointer;
+            transition: background var(--md-motion-duration-short) var(--md-motion-easing-standard);
+        }
+        .search-bar-widget:hover { background: var(--md-surface-container-highest); }
+        .search-bar-widget svg { width: 22px; height: 22px; fill: var(--md-on-surface-variant); }
+        .search-bar-widget span { color: var(--md-on-surface-variant); font-size: 16px; }
+
+        /* App grid */
+        .app-grid {
+            margin-top: 24px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            padding-bottom: 20px;
+        }
+
+        .app-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: transform var(--md-motion-duration-short) var(--md-motion-easing-standard);
+        }
+        .app-icon:active { transform: scale(0.88); }
+
+        .app-icon-bg {
+            width: 56px; height: 56px;
+            border-radius: var(--md-shape-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .app-icon-bg svg { width: 30px; height: 30px; fill: #fff; }
+
+        .app-label {
+            font-size: 12px;
+            color: var(--md-on-surface);
+            text-align: center;
+            max-width: 72px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Dock */
+        .dock {
+            margin-top: auto;
+            margin-bottom: 8px;
+            background: var(--md-surface-container-low);
+            border-radius: var(--md-shape-xl);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-around;
+            gap: 8px;
+        }
+        .dock .app-icon { gap: 0; }
+        .dock .app-label { display: none; }
+
+        /* ===== Appetize Screen ===== */
+        #screen-appetize {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px 50px;
+        }
+
+        .appetize-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .appetize-header h2 {
+            font-size: 24px;
+            font-weight: 400;
+            color: var(--md-on-surface);
+            margin-bottom: 8px;
+        }
+        .appetize-header p {
+            font-size: 14px;
+            color: var(--md-on-surface-variant);
+            line-height: 1.5;
+        }
+
+        .appetize-container {
+            width: 100%;
+            max-width: 350px;
+            background: var(--md-surface-container);
+            border-radius: var(--md-shape-xl);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        #appetize-iframe-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            min-height: 200px;
+        }
+
+        #appetize-iframe-container iframe {
+            width: 100%;
+            max-width: 320px;
+            height: 560px;
+            border: none;
+            border-radius: var(--md-shape-lg);
+        }
+
+        .appetize-placeholder {
+            width: 100%;
+            height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            color: var(--md-on-surface-variant);
+        }
+        .appetize-placeholder svg { width: 48px; height: 48px; fill: var(--md-on-surface-variant); opacity: 0.5; }
+
+        /* ===== Upload Screen ===== */
+        #screen-upload {
+            padding: 60px 24px 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .upload-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .upload-header h2 {
+            font-size: 24px;
+            font-weight: 400;
+            color: var(--md-on-surface);
+            margin-bottom: 8px;
+        }
+        .upload-header p {
+            font-size: 14px;
+            color: var(--md-on-surface-variant);
+            line-height: 1.5;
+        }
+
+        .upload-zone {
+            width: 100%;
+            max-width: 320px;
+            border: 2px dashed var(--md-outline);
+            border-radius: var(--md-shape-xl);
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            cursor: pointer;
+            transition: all var(--md-motion-duration-short) var(--md-motion-easing-standard);
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--md-primary);
+            background: var(--md-primary-container);
+        }
+        .upload-zone svg { width: 48px; height: 48px; fill: var(--md-primary); }
+        .upload-zone .upload-text { font-size: 14px; color: var(--md-on-surface-variant); text-align: center; }
+        .upload-zone .upload-text strong { color: var(--md-primary); }
+
+        #file-input { display: none; }
+
+        .upload-status {
+            margin-top: 24px;
+            width: 100%;
+            max-width: 320px;
+            display: none;
+        }
+        .upload-status.visible { display: block; }
+
+        .status-card {
+            background: var(--md-surface-container-high);
+            border-radius: var(--md-shape-lg);
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .status-card .progress-ring {
+            width: 24px; height: 24px;
+            border: 3px solid var(--md-outline-variant);
+            border-top-color: var(--md-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        .status-card .progress-ring.done {
+            border: none;
+            background: var(--md-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: none;
+        }
+        .status-card .progress-ring.done::after {
+            content: '';
+            width: 8px; height: 14px;
+            border: solid var(--md-on-primary);
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+            margin-top: -2px;
+        }
+        .status-card .progress-ring.error {
+            border: none;
+            background: var(--md-error);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: none;
+        }
+        .status-card .progress-ring.error::after {
+            content: 'X';
+            color: var(--md-on-error);
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .status-text { flex: 1; }
+        .status-text .status-title { font-size: 14px; font-weight: 500; color: var(--md-on-surface); }
+        .status-text .status-detail { font-size: 12px; color: var(--md-on-surface-variant); margin-top: 2px; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ===== Settings Screen ===== */
+        #screen-settings {
+            padding: 60px 0 50px;
+        }
+
+        .settings-header {
+            padding: 0 24px 16px;
+        }
+        .settings-header h2 {
+            font-size: 28px;
+            font-weight: 400;
+            color: var(--md-on-surface);
+        }
+
+        .settings-search {
+            margin: 0 24px 16px;
+            height: 56px;
+            background: var(--md-surface-container-high);
+            border-radius: var(--md-shape-full);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 12px;
+        }
+        .settings-search svg { width: 22px; height: 22px; fill: var(--md-on-surface-variant); }
+        .settings-search input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 16px;
+            color: var(--md-on-surface);
+            font-family: inherit;
+        }
+        .settings-search input::placeholder { color: var(--md-on-surface-variant); }
+
+        .settings-list {
+            padding: 0 16px;
+        }
+
+        .settings-group {
+            margin-bottom: 8px;
+        }
+
+        .settings-group-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--md-primary);
+            padding: 0 16px 8px;
+        }
+
+        .settings-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            gap: 16px;
+            cursor: pointer;
+            border-radius: var(--md-shape-full);
+            transition: background var(--md-motion-duration-short) var(--md-motion-easing-standard);
+        }
+        .settings-item:hover { background: var(--md-surface-container-high); }
+        .settings-item:active { background: var(--md-surface-container-highest); }
+
+        .settings-item-icon {
+            width: 40px; height: 40px;
+            border-radius: var(--md-shape-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .settings-item-icon svg { width: 22px; height: 22px; fill: var(--md-on-surface); }
+
+        .settings-item-text {
+            flex: 1;
+        }
+        .settings-item-text .label { font-size: 16px; color: var(--md-on-surface); }
+        .settings-item-text .sublabel { font-size: 13px; color: var(--md-on-surface-variant); margin-top: 2px; }
+
+        .settings-item .switch {
+            position: relative;
+            width: 52px; height: 32px;
+        }
+        .settings-item .switch input { opacity: 0; width: 0; height: 0; }
+        .settings-item .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--md-surface-container-highest);
+            border: 2px solid var(--md-outline);
+            border-radius: var(--md-shape-full);
+            transition: var(--md-motion-duration-short);
+        }
+        .settings-item .slider::before {
+            content: '';
+            position: absolute;
+            height: 16px; width: 16px;
+            left: 6px; bottom: 6px;
+            background: var(--md-outline);
+            border-radius: 50%;
+            transition: var(--md-motion-duration-short);
+        }
+        .settings-item .switch input:checked + .slider {
+            background: var(--md-primary);
+            border-color: var(--md-primary);
+        }
+        .settings-item .switch input:checked + .slider::before {
+            transform: translateX(20px);
+            background: var(--md-on-primary);
+            height: 22px; width: 22px;
+            left: 3px; bottom: 3px;
+        }
+
+        /* ===== Notifications ===== */
+        .notification-panel {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            background: var(--md-surface);
+            border-radius: 0 0 var(--md-shape-xl) var(--md-shape-xl);
+            padding: 44px 16px 16px;
+            z-index: 60;
+            transform: translateY(-100%);
+            transition: transform var(--md-motion-duration-medium) var(--md-motion-easing-emphasized);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            max-height: 80%;
+            overflow-y: auto;
+        }
+        .notification-panel.open { transform: translateY(0); }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .notification-header .date { font-size: 14px; color: var(--md-on-surface-variant); }
+
+        .notification-card {
+            background: var(--md-surface-container-high);
+            border-radius: var(--md-shape-lg);
+            padding: 16px;
+            margin-bottom: 8px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        .notification-card .notif-icon {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 16px;
+        }
+        .notification-card .notif-content { flex: 1; }
+        .notification-card .notif-title { font-size: 14px; font-weight: 500; color: var(--md-on-surface); }
+        .notification-card .notif-text { font-size: 13px; color: var(--md-on-surface-variant); margin-top: 2px; }
+
+        /* Quick settings */
+        .quick-settings {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .quick-toggle {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 12px 4px;
+            border-radius: var(--md-shape-lg);
+            cursor: pointer;
+            transition: background var(--md-motion-duration-short);
+        }
+        .quick-toggle:hover { background: var(--md-surface-container-high); }
+        .quick-toggle .qs-icon {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--md-surface-container-high);
+        }
+        .quick-toggle.active .qs-icon { background: var(--md-primary); }
+        .quick-toggle.active .qs-icon svg { fill: var(--md-on-primary); }
+        .quick-toggle .qs-icon svg { width: 20px; height: 20px; fill: var(--md-on-surface); }
+        .quick-toggle .qs-label { font-size: 11px; color: var(--md-on-surface-variant); }
+
+        /* ===== Toast ===== */
+        .toast {
+            position: fixed;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--md-inverse-surface);
+            color: var(--md-inverse-on-surface);
+            padding: 12px 24px;
+            border-radius: var(--md-shape-xs);
+            font-size: 14px;
+            z-index: 200;
+            opacity: 0;
+            transition: all var(--md-motion-duration-short) var(--md-motion-easing-standard);
+            pointer-events: none;
+            max-width: 90%;
+            text-align: center;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* ===== Info Panel ===== */
+        .info-panel {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: var(--md-surface-container-high);
+            border-radius: var(--md-shape-xl) var(--md-shape-xl) 0 0;
+            padding: 24px;
+            z-index: 150;
+            transform: translateY(100%);
+            transition: transform var(--md-motion-duration-medium) var(--md-motion-easing-emphasized);
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        .info-panel.open { transform: translateY(0); }
+        .info-panel .drag-handle {
+            width: 40px; height: 4px;
+            background: var(--md-outline-variant);
+            border-radius: var(--md-shape-full);
+            margin: 0 auto 16px;
+        }
+        .info-panel h3 { font-size: 20px; font-weight: 400; margin-bottom: 16px; color: var(--md-on-surface); }
+        .info-panel p { font-size: 14px; color: var(--md-on-surface-variant); line-height: 1.6; margin-bottom: 12px; }
+        .info-panel .info-section { margin-bottom: 20px; }
+        .info-panel .info-section h4 { font-size: 14px; font-weight: 500; color: var(--md-primary); margin-bottom: 8px; }
+
+        .info-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 140;
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--md-motion-duration-short);
+        }
+        .info-backdrop.open { opacity: 1; visibility: visible; }
+
+        /* ===== Loading Overlay ===== */
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: var(--md-background);
+            z-index: 80;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--md-motion-duration-medium);
+        }
+        .loading-overlay.visible { opacity: 1; visibility: visible; }
+
+        .loading-overlay .spinner {
+            width: 48px; height: 48px;
+            border: 4px solid var(--md-surface-container-high);
+            border-top-color: var(--md-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        .loading-overlay .loading-text { font-size: 16px; color: var(--md-on-surface-variant); }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 420px) {
+            .phone-wrapper { margin-top: 0; margin-bottom: 0; }
+            .phone-frame {
+                width: 100vw; height: 100vh;
+                border-radius: 0; padding: 0;
+                box-shadow: none;
+            }
+            .phone-screen { border-radius: 0; }
+            .punch-hole { display: none; }
+            .top-app-bar { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Top App Bar (outside phone) -->
+<div class="top-app-bar">
+    <button class="icon-button" onclick="toggleInfoPanel()">
+        <svg viewBox="0 0 24 24"><path d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-11h2V7h-2v2z"/></svg>
+    </button>
+    <span class="title">Android 12 Web Emulator</span>
+    <button class="icon-button" onclick="toggleTheme()">
+        <svg id="theme-icon" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+    </button>
+</div>
+
+<!-- Phone Frame -->
+<div class="phone-wrapper">
+    <div class="phone-frame">
+        <div class="phone-screen" id="phone-screen">
+            <div class="punch-hole"></div>
+
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <span id="status-time">12:00</span>
+                <div class="status-bar-right">
+                    <!-- Signal -->
+                    <svg viewBox="0 0 24 24"><path d="M2 22h20V2L2 22z"/></svg>
+                    <!-- WiFi -->
+                    <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+                    <!-- Battery -->
+                    <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+                </div>
+            </div>
+
+            <!-- ===== HOME SCREEN ===== -->
+            <div class="screen active" id="screen-home">
+                <div class="home-clock-widget">
+                    <div class="clock-display">
+                        <div class="clock-time" id="home-clock">12:00</div>
+                        <div class="clock-date" id="home-date">2024年1月1日 星期一</div>
+                    </div>
+                    <div class="weather-widget">
+                        <div class="weather-icon">☀️</div>
+                        <div class="weather-temp">22°</div>
+                    </div>
+                </div>
+
+                <div class="search-bar-widget" onclick="openInBrowser('https://www.google.com')">
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <span>搜索...</span>
+                </div>
+
+                <div class="app-grid">
+                    <div class="app-icon" onclick="navigateTo('appetize')">
+                        <div class="app-icon-bg" style="background: linear-gradient(135deg, #34A853, #4285F4);">
+                            <svg viewBox="0 0 24 24"><path d="M6 18c0 .55.45 1 1 1h1v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h2v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h1c.55 0 1-.45 1-1V8H6v10zM3.5 8C2.67 8 2 8.67 2 9.5v7c0 .83.67 1.5 1.5 1.5S5 17.33 5 16.5v-7C5 8.67 4.33 8 3.5 8zm17 0c-.83 0-1.5.67-1.5 1.5v7c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-7c0-.83-.67-1.5-1.5-1.5zm-4.97-5.84l1.3-1.3c.2-.2.2-.51 0-.71-.2-.2-.51-.2-.71 0l-1.48 1.48C13.85 1.23 12.95 1 12 1c-.96 0-1.86.23-2.66.63L7.85.15c-.2-.2-.51-.2-.71 0-.2.2-.2.51 0 .71l1.31 1.31C6.97 3.26 6 5.01 6 7h12c0-1.99-.97-3.75-2.47-4.84zM10 5H9V4h1v1zm5 0h-1V4h1v1z"/></svg>
+                        </div>
+                        <span class="app-label">APK 运行器</span>
+                    </div>
+                    <div class="app-icon" onclick="navigateTo('upload')">
+                        <div class="app-icon-bg" style="background: linear-gradient(135deg, #6750A4, #9C27B0);">
+                            <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                        </div>
+                        <span class="app-label">上传 APK</span>
+                    </div>
+                    <div class="app-icon" onclick="navigateTo('settings')">
+                        <div class="app-icon-bg" style="background: linear-gradient(135deg, #5F6368, #80868B);">
+                            <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                        </div>
+                        <span class="app-label">设置</span>
+                    </div>
+                    <div class="app-icon" onclick="openInBrowser('https://www.google.com')">
+                        <div class="app-icon-bg" style="background: linear-gradient(135deg, #4285F4, #1A73E8);">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                        </div>
+                        <span class="app-label">浏览器</span>
+                    </div>
+                    <div class="app-icon" onclick="showToast('计算器功能即将上线')">
+                        <div class="app-icon-bg" style="background: linear-gradient(135deg, #FF6D00, #FF9100);">
+                            <svg viewBox="0 0 24 24"><path d="M7 2h10c1.1 0 2 .9 2 2v16c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2zm5 2c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm0 14c-2.21 0-4 1.79-4 4h8c0-2.21-1.79-4-4-4zm-3-6h6v-2H9v2zm0-4h6V6H9v2z"/></svg>
+                        </div>
+                        <span class="app-icon-bg">🧮</span>
+                    </div>
+                    <div class="app-icon" onclick="openInBrowser('https://www.youtube.com')">
+                        <div class="app-icon-bg" style="background: linear-gradient(135deg, #FF0000, #CC0000);">
+                            <svg viewBox="0 0 24 24"><path d="M21.58 7.19c-.23-.86-.91-1.54-1.77-1.77C18.25 5 12 5 12 5s-6.25 0-7.81.42c-.86.23-1.54.91-1.77 1.77C2 8.75 2 12 2 12s0 3.25.42 4.81c.23.86.91 1.54 1.77 1.77C5.75 19 12 19 12 19s6.25 0 7.81-.42c.86-.23 1.54-.91 1.77-1.77C22 15.25 22 12 22 12s0-3.25-.42-4.81zM10 15V9l5.2 3-5.2 3z"/></svg>
+                        </div>
+                        <span class="app-label">YouTube</span>
+                    </div>
+                    <div class="app-icon" onclick="openInBrowser('https://mail.google.com')">
+                        <div class="app-icon-bg" style="background: linear-gradient(135deg, #EA4335, #C5221F);">
+                            <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                        </div>
+                        <span class="app-label">Gmail</span>
+                    </div>
+                    <div class="app-icon" onclick="openInBrowser('https://maps.google.com')">
+                        <div class="app-icon-bg" style="background: linear-gradient(135deg, #34A853, #0F9D58);">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                        </div>
+                        <span class="app-label">地图</span>
+                    </div>
+                </div>
+
+                <!-- Dock -->
+                <div class="dock">
+                    <div class="app-icon" onclick="openInBrowser('https://www.google.com')">
+                        <div class="app-icon-bg" style="background: linear-gradient(135deg, #4285F4, #1A73E8);">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                        </div>
+                    </div>
+                    <div class="app-icon" onclick="navigateTo('appetize')">
+                        <div class="app-icon-bg" style="background: linear-gradient(135deg, #34A853, #4285F4);">
+                            <svg viewBox="0 0 24 24"><path d="M6 18c0 .55.45 1 1 1h1v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h2v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h1c.55 0 1-.45 1-1V8H6v10zM3.5 8C2.67 8 2 8.67 2 9.5v7c0 .83.67 1.5 1.5 1.5S5 17.33 5 16.5v-7C5 8.67 4.33 8 3.5 8zm17 0c-.83 0-1.5.67-1.5 1.5v7c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-7c0-.83-.67-1.5-1.5-1.5zm-4.97-5.84l1.3-1.3c.2-.2.2-.51 0-.71-.2-.2-.51-.2-.71 0l-1.48 1.48C13.85 1.23 12.95 1 12 1c-.96 0-1.86.23-2.66.63L7.85.15c-.2-.2-.51-.2-.71 0-.2.2-.2.51 0 .71l1.31 1.31C6.97 3.26 6 5.01 6 7h12c0-1.99-.97-3.75-2.47-4.84zM10 5H9V4h1v1zm5 0h-1V4h1v1z"/></svg>
+                        </div>
+                    </div>
+                    <div class="app-icon" onclick="navigateTo('upload')">
+                        <div class="appicon-bg" style="background: linear-gradient(135deg, #6750A4, #9C27B0);">
+                            <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                        </div>
+                    </div>
+                    <div class="app-icon" onclick="navigateTo('settings')">
+                        <div class="app-icon-bg" style="background: linear-gradient(135deg, #5F6368, #80868B);">
+                            <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== APPETIZE SCREEN ===== -->
+            <div class="screen" id="screen-appetize">
+                <div class="appetize-header">
+                    <h2>APK 运行器</h2>
+                    <p>在云端 Android 环境中运行你的 APK</p>
+                </div>
+                <div class="appetize-container">
+                    <div id="appetize-iframe-container">
+                        <div class="appetize-placeholder" id="appetize-placeholder">
+                            <svg viewBox="0 0 24 24"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
+                            <p>尚未加载 APK<br>请先上传 APK 文件</p>
+                        </div>
+                    </div>
+                    <button class="md-filled-button" onclick="navigateTo('upload')" style="
+                        background: var(--md-primary); color: var(--md-on-primary);
+                        border: none; padding: 10px 24px; border-radius: var(--md-shape-full);
+                        font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit;
+                        transition: filter var(--md-motion-duration-short);
+                    " onmouseover="this.style.filter='brightness(0.9)'" onmouseout="this.style.filter='brightness(1)'">
+                        上传 APK
+                    </button>
+                </div>
+            </div>
+
+            <!-- ===== UPLOAD SCREEN ===== -->
+            <div class="screen" id="screen-upload">
+                <div class="upload-header">
+                    <h2>上传 APK</h2>
+                    <p>选择一个 Android APK 文件<br>它将在云端 Android 模拟器中运行</p>
+                </div>
+                <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+                    <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                    <div class="upload-text">
+                        点击选择或拖拽 APK 文件到此处<br>
+                        <strong>选择文件</strong>
+                    </div>
+                </div>
+                <input type="file" id="file-input" accept=".apk">
+                <div class="upload-status" id="upload-status">
+                    <div class="status-card">
+                        <div class="progress-ring" id="progress-ring"></div>
+                        <div class="status-text">
+                            <div class="status-title" id="status-title">正在上传...</div>
+                            <div class="status-detail" id="status-detail">请稍候</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== SETTINGS SCREEN ===== -->
+            <div class="screen" id="screen-settings">
+                <div class="settings-header">
+                    <h2>设置</h2>
+                </div>
+                <div class="settings-search">
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <input type="text" placeholder="搜索设置" id="settings-search-input">
+                </div>
+
+                <div class="settings-list">
+                    <div class="settings-group">
+                        <div class="settings-group-title">显示</div>
+                        <div class="settings-item" onclick="toggleTheme()">
+                            <div class="settings-item-icon" style="background: var(--md-primary-container);">
+                                <svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+                            </div>
+                            <div class="settings-item-text">
+                                <div class="label">深色主题</div>
+                                <div class="sublabel" id="theme-status">关闭</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="theme-switch" onchange="toggleTheme()">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <div class="settings-group-title">模拟器</div>
+                        <div class="settings-item" onclick="navigateTo('appetize')">
+                            <div class="settings-item-icon" style="background: var(--md-tertiary-container);">
+                                <svg viewBox="0 0 24 24"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
+                            </div>
+                            <div class="settings-item-text">
+                                <div class="label">APK 运行器</div>
+                                <div class="sublabel">在云端运行 APK</div>
+                            </div>
+                        </div>
+                        <div class="settings-item" onclick="navigateTo('upload')">
+                            <div class="settings-item-icon" style="background: var(--md-secondary-container);">
+                                <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                            </div>
+                            <div class="settings-item-text">
+                                <div class="label">上传 APK</div>
+                                <div class="sublabel">选择 APK 文件上传</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <div class="settings-group-title">关于</div>
+                        <div class="settings-item" onclick="toggleInfoPanel()">
+                            <div class="settings-item-icon" style="background: var(--md-primary-container);">
+                                <svg viewBox="0 0 24 24"><path d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-11h2V7h-2v2z"/></svg>
+                            </div>
+                            <div class="settings-item-text">
+                                <div class="label">关于此项目</div>
+                                <div class="sublabel">Android 12 Web Emulator v1.0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification Panel -->
+            <div class="notification-panel" id="notification-panel">
+                <div class="notification-header">
+                    <span class="date" id="notif-date">2024年1月1日</span>
+                    <button class="icon-button" onclick="toggleNotifications()" style="width: 36px; height: 36px;">
+                        <svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
+                    </button>
+                </div>
+                <div class="quick-settings">
+                    <div class="quick-toggle" id="qs-wifi" onclick="toggleQuickSetting('wifi')">
+                        <div class="qs-icon"><svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg></div>
+                        <span class="qs-label">WLAN</span>
+                    </div>
+                    <div class="quick-toggle" id="qs-bt" onclick="toggleQuickSetting('bt')">
+                        <div class="qs-icon"><svg viewBox="0 0 24 24"><path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"/></svg></div>
+                        <span class="qs-label">蓝牙</span>
+                    </div>
+                    <div class="quick-toggle active" id="qs-theme" onclick="toggleTheme()">
+                        <div class="qs-icon"><svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg></div>
+                        <span class="qs-label">深色</span>
+                    </div>
+                    <div class="quick-toggle" onclick="showToast('飞行模式已切换')">
+                        <div class="qs-icon"><svg viewBox="0 0 24 24"><path d="M10.18 9l-.36-.36-2.06-2.06L3 2 1.59 3.41 6.68 8.5 3.5 11.9l3.36 3.36 3.18-3.18 2.12 2.12-3.18 3.18 3.36 3.36 3.4-3.18 3.82 3.82 1.41-1.41-4.24-4.24L21 11.9l-3.36-3.36-3.4 3.18-2.12-2.12 3.18-3.18L12.06 3.3 9.6 5.76l2.82 2.82-.36.36 3.18 3.18 2.82-2.82 1.41 1.41-4.24 4.24L21 11.9l-3.36-3.36-3.18 3.18-2.82-2.82z"/></svg></div>
+                        <span class="qs-label">飞行</span>
+                    </div>
+                </div>
+                <div class="notification-card">
+                    <div class="notif-icon" style="background: var(--md-primary-container);">📱</div>
+                    <div class="notif-content">
+                        <div class="notif-title">Android 12 Web Emulator</div>
+                        <div class="notif-text">欢迎使用！点击"APK 运行器"上传并运行你的 APK。</div>
+                    </div>
+                </div>
+                <div class="notification-card">
+                    <div class="notif-icon" style="background: var(--md-tertiary-container);">⚠️</div>
+                    <div class="notif-content">
+                        <div class="notif-title">提示</div>
+                        <div class="notif-text">APK 运行需要 appetize.io 账号。上传后通过嵌入 iframe 在云端运行。</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Overlay -->
+            <div class="loading-overlay" id="loading-overlay">
+                <div class="spinner"></div>
+                <div class="loading-text" id="loading-text">正在加载...</div>
+            </div>
+
+            <!-- Navigation Bar -->
+            <div class="nav-bar">
+                <div class="gesture-pill" onclick="navigateHome()"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Info Panel (outside phone) -->
+<div class="info-backdrop" id="info-backdrop" onclick="toggleInfoPanel()"></div>
+<div class="info-panel" id="info-panel">
+    <div class="drag-handle"></div>
+    <h3>关于 Android 12 Web Emulator</h3>
+    <div class="info-section">
+        <h4>这是什么？</h4>
+        <p>这是一个基于 Web 技术构建的 Android 12 (Material You) 风格的模拟器界面。它通过嵌入 appetize.io 的云端 Android 模拟器，实现了在浏览器中运行真实 APK 的能力。</p>
+    </div>
+    <div class="info-section">
+        <h4>技术架构</h4>
+        <p>前端使用纯 HTML/CSS/JavaScript 实现 Android 12 Material You 设计系统，包括：</p>
+        <p>- Material You 动态色彩系统（支持亮/暗主题）</p>
+        <p>- Android 12 桌面、状态栏、手势导航</p>
+        <p>- 通知面板与快捷设置</p>
+        <p>- 通过 iframe 嵌入 appetize.io 云端模拟器</p>
+    </div>
+    <div class="info-section">
+        <h4>如何使用</h4>
+        <p>1. 点击"上传 APK"选择 .apk 文件</p>
+        <p>2. APK 会被上传到 appetize.io 云端</p>
+        <p>3. 上传完成后，在"APK 运行器"中查看运行效果</p>
+        <p>4. 你可以像使用真实 Android 设备一样操作</p>
+    </div>
+    <div class="info-section">
+        <h4>注意事项</h4>
+        <p>- 需要 appetize.io API Token 才能上传 APK（免费额度有限）</p>
+        <p>- APK 运行在云端服务器上，需要网络连接</p>
+        <p>- 免费套餐有并发会话限制</p>
+    </div>
+    <button class="md-filled-button" onclick="toggleInfoPanel()" style="
+        background: var(--md-primary); color: var(--md-on-primary);
+        border: none; padding: 10px 24px; border-radius: var(--md-shape-full);
+        font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit;
+        width: 100%; margin-top: 8px;
+    ">关闭</button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Appetize Embed Script -->
+<script src="https://js.appetize.io/embed.js" async></script>
+
+<script>
+// ===== State =====
+let currentScreen = 'home';
+let darkTheme = false;
+let appetizeClient = null;
+let appetizePublicKey = null;
+let quickSettings = { wifi: true, bt: false };
+
+// ===== Clock =====
+function updateClock() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const timeStr = h + ':' + m;
+    document.getElementById('status-time').textContent = timeStr;
+    document.getElementById('home-clock').textContent = timeStr;
+
+    const days = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+    const dateStr = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日 ' + days[now.getDay()];
+    document.getElementById('home-date').textContent = dateStr;
+    const notifDate = document.getElementById('notif-date');
+    if (notifDate) notifDate.textContent = dateStr;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ===== Navigation =====
+function navigateTo(screen) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const target = document.getElementById('screen-' + screen);
+    if (target) {
+        target.classList.add('active');
+        currentScreen = screen;
+    }
+}
+
+function navigateHome() {
+    if (document.getElementById('notification-panel').classList.contains('open')) {
+        toggleNotifications();
+        return;
+    }
+    navigateTo('home');
+}
+
+// ===== Theme =====
+function toggleTheme() {
+    darkTheme = !darkTheme;
+    document.documentElement.setAttribute('data-theme', darkTheme ? 'dark' : 'light');
+    document.getElementById('phone-screen').setAttribute('data-theme', darkTheme ? 'dark' : 'light');
+    const sw = document.getElementById('theme-switch');
+    if (sw) sw.checked = darkTheme;
+    const ts = document.getElementById('theme-status');
+    if (ts) ts.textContent = darkTheme ? '开启' : '关闭';
+    const qsTheme = document.getElementById('qs-theme');
+    if (qsTheme) {
+        if (darkTheme) qsTheme.classList.add('active');
+        else qsTheme.classList.remove('active');
+    }
+    showToast(darkTheme ? '已切换到深色主题' : '已切换到浅色主题');
+}
+
+// ===== Toast =====
+function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// ===== Info Panel =====
+function toggleInfoPanel() {
+    const panel = document.getElementById('info-panel');
+    const backdrop = document.getElementById('info-backdrop');
+    panel.classList.toggle('open');
+    backdrop.classList.toggle('open');
+}
+
+// ===== Notifications =====
+function toggleNotifications() {
+    const panel = document.getElementById('notification-panel');
+    panel.classList.toggle('open');
+}
+
+// Status bar click opens notifications
+document.querySelector('.status-bar').addEventListener('click', function(e) {
+    e.stopPropagation();
+    toggleNotifications();
+});
+
+// ===== Quick Settings =====
+function toggleQuickSetting(key) {
+    quickSettings[key] = !quickSettings[key];
+    const el = document.getElementById('qs-' + key);
+    if (el) {
+        if (quickSettings[key]) el.classList.add('active');
+        else el.classList.remove('active');
+    }
+    const labels = { wifi: 'WLAN', bt: '蓝牙' };
+    showToast(labels[key] + (quickSettings[key] ? ' 已开启' : ' 已关闭'));
+}
+
+// ===== Open in Browser =====
+function openInBrowser(url) {
+    window.open(url, '_blank');
+}
+
+// ===== APK Upload =====
+const uploadZone = document.getElementById('upload-zone');
+const fileInput = document.getElementById('file-input');
+
+fileInput.addEventListener('change', function(e) {
+    if (e.target.files.length > 0) {
+        handleFile(e.target.files[0]);
+    }
+});
+
+uploadZone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    uploadZone.classList.add('dragover');
+});
+uploadZone.addEventListener('dragleave', function(e) {
+    uploadZone.classList.remove('dragover');
+});
+uploadZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length > 0) {
+        handleFile(e.dataTransfer.files[0]);
+    }
+});
+
+function handleFile(file) {
+    if (!file.name.toLowerCase().endsWith('.apk')) {
+        showToast('请选择 .apk 格式的文件');
+        return;
+    }
+
+    const statusEl = document.getElementById('upload-status');
+    const titleEl = document.getElementById('status-title');
+    const detailEl = document.getElementById('status-detail');
+    const ringEl = document.getElementById('progress-ring');
+
+    statusEl.classList.add('visible');
+    ringEl.className = 'progress-ring';
+    titleEl.textContent = '正在上传 ' + file.name;
+    detailEl.textContent = '文件大小: ' + (file.size / 1024 / 1024).toFixed(1) + ' MB';
+
+    // Try uploading to appetize.io via REST API
+    uploadToAppetize(file, titleEl, detailEl, ringEl);
+}
+
+function uploadToAppetize(file, titleEl, detailEl, ringEl) {
+    const API_TOKEN = localStorage.getItem('appetize_api_token');
+
+    if (!API_TOKEN) {
+        ringEl.className = 'progress-ring error';
+        titleEl.textContent = '需要 API Token';
+        detailEl.innerHTML = '请在下方输入你的 appetize.io API Token<br>获取地址: <a href="https://appetize.io/settings" target="_blank" style="color: var(--md-primary);">appetize.io/settings</a><br><br><input type="text" id="token-input" placeholder="粘贴 API Token" style="width:100%;padding:8px 12px;border:1px solid var(--md-outline);border-radius:8px;background:var(--md-surface);color:var(--md-on-surface);font-size:14px;font-family:inherit;"><br><br><button onclick="saveTokenAndUpload()" style="background:var(--md-primary);color:var(--md-on-primary);border:none;padding:8px 20px;border-radius:20px;cursor:pointer;font-size:14px;font-family:inherit;">保存并上传</button>';
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('platform', 'android');
+
+    titleEl.textContent = '正在上传到 appetize.io...';
+    detailEl.textContent = '请稍候，这可能需要几秒钟';
+
+    fetch('https://api.appetize.io/v1/app', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + API_TOKEN
+        },
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return response.json();
+    })
+    .then(data => {
+        ringEl.className = 'progress-ring done';
+        titleEl.textContent = '上传成功！';
+        detailEl.textContent = '正在加载模拟器...';
+
+        if (data.publicKey) {
+            appetizePublicKey = data.publicKey;
+            localStorage.setItem('appetize_public_key', data.publicKey);
+            setTimeout(() => {
+                loadAppetizeEmbed(data.publicKey);
+                navigateTo('appetize');
+            }, 1000);
+        }
+    })
+    .catch(err => {
+        ringEl.className = 'progress-ring error';
+        titleEl.textContent = '上传失败';
+        detailEl.textContent = err.message + ' (请检查 API Token 是否有效)';
+    });
+}
+
+function saveTokenAndUpload() {
+    const tokenInput = document.getElementById('token-input');
+    if (tokenInput && tokenInput.value.trim()) {
+        localStorage.setItem('appetize_api_token', tokenInput.value.trim());
+        showToast('Token 已保存');
+        // Re-trigger upload
+        if (fileInput.files.length > 0) {
+            handleFile(fileInput.files[0]);
+        }
+    } else {
+        showToast('请输入有效的 Token');
+    }
+}
+
+// ===== Appetize Embed =====
+function loadAppetizeEmbed(publicKey) {
+    const container = document.getElementById('appetize-iframe-container');
+    const placeholder = document.getElementById('appetize-placeholder');
+    if (placeholder) placeholder.style.display = 'none';
+
+    container.innerHTML = '<iframe src="https://appetize.io/embed/' + publicKey + '?device=pixel4&osVersion=12.0&scale=auto&autoplay=false&orientation=portrait&screenOnly=false&audio=true&androidPackageManager=true&grantPermissions=true" width="100%" height="560px" frameborder="0" scrolling="no"></iframe>';
+
+    showToast('APK 已加载，点击屏幕开始运行');
+}
+
+// Load saved public key on startup
+window.addEventListener('load', function() {
+    const savedKey = localStorage.getItem('appetize_public_key');
+    if (savedKey) {
+        appetizePublicKey = savedKey;
+        loadAppetizeEmbed(savedKey);
+    }
+});
+
+// ===== Gesture: swipe down on status bar for notifications =====
+let touchStartY = 0;
+document.querySelector('.status-bar').addEventListener('touchstart', function(e) {
+    touchStartY = e.touches[0].clientY;
+});
+document.querySelector('.status-bar').addEventListener('touchend', function(e) {
+    const endY = e.changedTouches[0].clientY;
+    if (endY - touchStartY > 30) {
+        toggleNotifications();
+    }
+});
+
+// ===== Settings search =====
+document.getElementById('settings-search-input').addEventListener('input', function(e) {
+    const query = e.target.value.toLowerCase();
+    document.querySelectorAll('.settings-item').forEach(function(item) {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(query) ? '' : 'none';
+    });
+});
+</script>
+
+</body>
+</html>
